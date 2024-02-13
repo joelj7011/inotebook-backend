@@ -10,36 +10,47 @@ const JWT_SECRET = "shivangisagoodboy";
 exports.createUser = async (req, res) => {
     try {
         //validation error handling
-        //create salt
-        //add hash
-        //create a new user
-        //send id as token
-        //create token
-
         const errors = validationResult(req);
+
+        console.log("HEllo")
 
         if (!errors.isEmpty()) {
             return res.status(400).send(errors);
         }
 
+        //hash for password
         const salt = await bcrypt.genSalt(10);
 
+        //requsting for the password from the body and adding salt
         const secPass = await bcrypt.hash(req.body.password, salt);
 
+
+        //------------------test method to hit endpoint-------------//
+        // const user2 = await User(req.bod);
+        // await user2.save();
+        // req.json(user2);
+        //------------------test method to hit endpoint-------------//
+
+
+        //create a new user
         let user = await User.create({
+            //requesting the credentials from the body(thunderclient)
             name: req.body.name,
             password: secPass,
             email: req.body.email,
         });
 
+        //sending id as token to authenticate 
         const data = {
             user: {
                 id: user.id,
             }
         }
 
+        //creating token and passing ,data(user.id),jwt_secret
         const token = jwt.sign(data, JWT_SECRET);
 
+        //sending token
         res.json({ token });
 
         console.log('user-saved', user.email);
@@ -67,6 +78,7 @@ exports.login = async (req, res) => {
 
         //finding the email in databae
         let user = await User.findOne({ email });
+
 
         //comparing password with the hash of the previously stored password
         const passwordCompare = await bcrypt.compare(password, user.password);
@@ -126,30 +138,21 @@ exports.UpdateUser = async (req, res) => {
 
     try {
 
-        //destructure requaest body
-        //generate salt and hash password
-        //create new user object(update-logic)
-        // Find user by ID and update
-        const errors = validationResult(req);
-
-
-        if (errors.isEmpty()) {
-            return res.status(400).json({ errors });
-        }
-        //1
+        //destructure
         const { name, email, password } = req.body;
 
-        //2
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
 
-        //3
+        //updating the user
         const newUser = {};
         if (name) { newUser.name = name };
         if (email) { newUser.email = email };
-        if (hashedPassword) { newUser.password = hashedPassword };
+        if (password) { newUser.password = password };
 
-        //4
+        // //find the user by ID
+        // const user = await User.findById(req.user.id);
+
+
+        //find the user and update it 
         const user = await User.findByIdAndUpdate(req.user.id, { $set: newUser }, {
             new: true,
             runValidators: true,
@@ -172,8 +175,7 @@ exports.UpdateUser = async (req, res) => {
         // }
 
     } catch (error) {
-        console.error(error);
-        return res.status(500).send("Internal Server Error");
+        catchAsyncErrors(error, req, res);
     }
 }
 
@@ -181,20 +183,35 @@ exports.UpdateUser = async (req, res) => {
 //-----------------delete the user--------------------------------//
 exports.Deletetheuser = async (req, res) => {
     try {
-        // Find the user and delete it
-        const user = await User.findByIdAndDelete(req.user.id);
+        //destracture
+        const { name, email, password } = req.body;
 
+
+        //find the user and delete it 
+        // let user = await User.findById(req.user.id);
+        // if (!user) { return res.status(404).send("not found"); }
+
+        //Allow deletion only if user owns this User
+        // if (user.toString() !== req.user.id) {
+        //     return res.status(404).send("not found");
+        // }
+
+        //delete the user
+        const user = await User.findByIdAndDelete(req.user.id, {
+            new: true,
+            runValidators: true,
+            useFindAndModify: false,
+        });
+        console.log("user deleted", user.name);
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res.status(200).json({
+                success: true,
+                user: user,
+            });
         }
 
-        console.log("User deleted:", user.name);
-
-        return res.status(200).json({ success: true, user: user });
-
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
+        catchAsyncErrors(error, req, res);
     }
-}
 
+}
