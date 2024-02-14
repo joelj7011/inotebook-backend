@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const fetchUser = require('../middleware/fetchUser');
+const fetchUser = require('../middleware/auth');
 const { fetchAllNotes, AddNotes, updateTheNotes, DeleteTheNode } = require('../controllers/notesController');
 const { body } = require('express-validator');
 

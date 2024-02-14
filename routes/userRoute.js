@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { createUser, login, getuserdata, UpdateUser, Deletetheuser } = require('../controllers/userControllert');
 const { body } = require('express-validator');
-const fetchUser = require('../middleware/fetchUser');
+const fetchUser = require('../middleware/auth');
 
 router.post('/createuser', [
     body('name').custom((value) => {
