@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const JWT_SECRET = "shivangisagoodboy";
+const JWT_EXPIRES = "1h";
 
 const UserSchema = new Schema({
     name: {
@@ -20,5 +22,10 @@ const UserSchema = new Schema({
         default: Date.now
     }
 })
+
+UserSchema.methods.getJwtToken = function () {
+    return jwt.sign({ id: this._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+}
+
 const User = mongoose.model('user', UserSchema);
 module.exports = User;

@@ -1,25 +1,30 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = "shivangisagoodboy";
+const User = require('../models/User');
 
-
-const fetchUser = (req, res, next) => {
+const authentication0 = async (req, res, next) => {
     try {
         //requesting the header token to identify the user
-        const token = req.header('auth-token');
-
         //checking if header is correct
+        //verifying the token 
+        //assigning the token to req.user
+
+        const token = req.cookies['auth-token'];
+
+
         if (!token) {
             return res.status(401).send({ error: "please authenticate using a valid token" });
         }
 
-        //verifying the token 
+
         const data = jwt.verify(token, JWT_SECRET);
 
 
         console.log('User information extracted from token:', data.user);
 
 
-        //assigning the token to req.user
+        // const data = await User.findById(decodedata.id);
+
         req.user = data.user;
 
 
@@ -34,4 +39,4 @@ const fetchUser = (req, res, next) => {
 };
 
 
-module.exports = fetchUser;
+module.exports = authentication0;

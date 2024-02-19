@@ -1,59 +1,63 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const verifictaiontoken = require('../models/verificationtoken');
+const mail = require('../Utils/mail');
 const catchAsyncErrors = require('../Utils/catchAsyncErrors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendToken = require('../Utils/sendtoken');
 const JWT_SECRET = "shivangisagoodboy";
 
 
 //------------------------------creating user-------------------------------//
 exports.createUser = async (req, res) => {
     try {
-        //validation error handling
-        const errors = validationResult(req);
+        //1.express-validator handling
+        //2.generating salt for password
+        //3.adding salt to the password 
+        //4.creat the user
+        //5. prepare the payload for the JSON Web Token that will be used for authentication and authorization.
+        //6.create token and pass ,data(user.id),jwt_secret
+        //7.send token
+        //8.check console
 
-        console.log("HEllo")
+        //1
+        const errors = validationResult(req);
 
         if (!errors.isEmpty()) {
             return res.status(400).send(errors);
         }
 
-        //hash for password
+        //2
         const salt = await bcrypt.genSalt(10);
 
-        //requsting for the password from the body and adding salt
+        //3
         const secPass = await bcrypt.hash(req.body.password, salt);
 
-
-        //------------------test method to hit endpoint-------------//
-        // const user2 = await User(req.bod);
-        // await user2.save();
-        // req.json(user2);
-        //------------------test method to hit endpoint-------------//
-
-
-        //create a new user
-        let user = await User.create({
+        //4
+        const user = await User.create({
             //requesting the credentials from the body(thunderclient)
             name: req.body.name,
             password: secPass,
             email: req.body.email,
         });
 
-        //sending id as token to authenticate 
+        //5
         const data = {
             user: {
                 id: user.id,
             }
         }
 
-        //creating token and passing ,data(user.id),jwt_secret
+        //6
         const token = jwt.sign(data, JWT_SECRET);
 
-        //sending token
-        res.json({ token });
+        //7
+        sendToken(token, user, 201, res);
+        // res.json({ token });
 
-        console.log('user-saved', user.email);
+        //8
+        console.log('user-saved', user.name);
     }
     catch (error) {
         catchAsyncErrors(error, req, res);
@@ -62,45 +66,57 @@ exports.createUser = async (req, res) => {
 
 
 
+
 //-----------------------------logging the user-------------------------------//
 exports.login = async (req, res) => {
     try {
+        //1.express-validator handling
+        //2.destructure the email and password
+        //3.find the email in the database
+        //4.compare the password with the hashed password
+        //5.check if the user is valid or not.
+        //6.send the payload(token)
+        //7.add JWT_secret on the epayload
+        //8.send token
+        //9.check console
 
-        //validation error handling
+        //1
         const errors = validationResult(req);
 
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors });
         }
 
-        //taking out email password from req.body
+        //2
         const { email, password } = req.body;
 
-        //finding the email in databae
+        //3
         let user = await User.findOne({ email });
 
 
-        //comparing password with the hash of the previously stored password
+        //4
         const passwordCompare = await bcrypt.compare(password, user.password);
 
-        //checking if user is a valid user or not 
+        //5 
         if (!passwordCompare) {
             return res.status(400).json({ error: 'please login with correct credentials' });
         }
 
-        //if the user is valid fetching the user crdentials back from the database through id
+        //6
         const data = {
             user: {
                 id: user.id,
             }
         }
 
-        //creating token and passing ,data(user.id),jwt_secret
+        //7
         const token = jwt.sign(data, JWT_SECRET);
 
-        //sending token
-        res.json({ token });
+        //8
+        sendToken(token, user, 201, res);
 
+
+        //9
         console.log("user retreived", user.name);
 
     } catch (error) {
@@ -121,7 +137,7 @@ exports.getuserdata = async (req, res) => {
         const user = await User.findById(userId).select('-password');
 
         //sending the response
-        res.send(user)
+        res.json({ user });
 
         console.log("data fetched", user.name);
 
@@ -161,10 +177,7 @@ exports.UpdateUser = async (req, res) => {
 
         console.log("user updated", user.name);
 
-        return res.status(200).json({
-            success: true,
-            user: user,
-        })
+        res.json({ user });
 
         // //The way iam  checking user.toString() !== req.params.id it`s incorrect because it is comparing the user document (after finding by ID) to the string representation of the request parameter (req.params.id). This condition would always evaluate to true, leading to the "not found" response.--//////
         // if (!user) {
@@ -183,8 +196,7 @@ exports.UpdateUser = async (req, res) => {
 //-----------------delete the user--------------------------------//
 exports.Deletetheuser = async (req, res) => {
     try {
-        //destracture
-        const { name, email, password } = req.body;
+
 
 
         //find the user and delete it 
@@ -203,15 +215,23 @@ exports.Deletetheuser = async (req, res) => {
             useFindAndModify: false,
         });
         console.log("user deleted", user.name);
-        if (!user) {
-            return res.status(200).json({
-                success: true,
-                user: user,
-            });
-        }
+
+
+        return res.status(200).json({
+            success: true,
+            user: user,
+        });
 
     } catch (error) {
         catchAsyncErrors(error, req, res);
     }
 
+}
+
+exports.logout = (req, res) => {
+    try {
+
+    } catch (error) {
+
+    }
 }
