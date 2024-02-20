@@ -11,7 +11,7 @@ const catchAsyncErrors = (error, req, res) => {
             }
         );
     } else {
-        return res.status(500).send('internal server error');
+        return res.status(500).send(error.message);
     }
 
 }

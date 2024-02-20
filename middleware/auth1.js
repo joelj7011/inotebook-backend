@@ -6,21 +6,34 @@ const catchErrors = require('../Utils/catchErrors');
 
 const authentication = async (req, res, next) => {
     try {
-        const token = req.cookies['auth-token'];
+        //1.req cookies from the browser
+        //2.check token
+        //3.if no token return error
+        //4.add JWT_SECRET to decodedata
+        //5.check decodedata
+        //6.find the user id
+        //7.assign req.user id
 
-        // const { token } = req.cookies;
-
+        //1
+        const { token } = req.cookies;
+        //2
         console.log("token->", token);
-
+        //3
         if (!token) {
             return catchErrors(401, 'please login', res);
         }
-
+        //4
         const decodedData = jwt.verify(token, JWT_SECRET);
+        //5
+        console.log("decodedata->", decodedData);
+        //6
+        const data = await User.findById(decodedData.id);
 
-        const data = await User.findById(decodedData.user);
-
-        req.user = data.user;
+        if (!data) {
+            throw new Error('no data available');
+        }
+        //7
+        req.user = data;
 
         next();
 

@@ -1,17 +1,17 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
-const verifictaiontoken = require('../models/verificationtoken');
-const mail = require('../Utils/mail');
 const catchAsyncErrors = require('../Utils/catchAsyncErrors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const sendToken = require('../Utils/sendtoken');
+const { sendToken } = require('../Utils/sendtoken');
 const JWT_SECRET = "shivangisagoodboy";
 
 
 //------------------------------creating user-------------------------------//
 exports.createUser = async (req, res) => {
     try {
+
+        //previous-algo
         //1.express-validator handling
         //2.generating salt for password
         //3.adding salt to the password 
@@ -21,8 +21,16 @@ exports.createUser = async (req, res) => {
         //7.send token
         //8.check console
 
+        //new-algo
+        //1.express-validator handling
+        //2.generating salt for password
+        //3.adding salt to the password 
+        //4.creat the user
+        //5.sendtoken
+
         //1
         const errors = validationResult(req);
+        console.log("test1")
 
         if (!errors.isEmpty()) {
             return res.status(400).send(errors);
@@ -33,30 +41,17 @@ exports.createUser = async (req, res) => {
 
         //3
         const secPass = await bcrypt.hash(req.body.password, salt);
+        console.log("secPass", secPass)
 
         //4
         const user = await User.create({
-            //requesting the credentials from the body(thunderclient)
             name: req.body.name,
             password: secPass,
             email: req.body.email,
         });
 
-        //5
-        const data = {
-            user: {
-                id: user.id,
-            }
-        }
+        sendToken(user, 200, res)
 
-        //6
-        const token = jwt.sign(data, JWT_SECRET);
-
-        //7
-        sendToken(token, user, 201, res);
-        // res.json({ token });
-
-        //8
         console.log('user-saved', user.name);
     }
     catch (error) {
@@ -70,6 +65,8 @@ exports.createUser = async (req, res) => {
 //-----------------------------logging the user-------------------------------//
 exports.login = async (req, res) => {
     try {
+
+        // previous algo without token
         //1.express-validator handling
         //2.destructure the email and password
         //3.find the email in the database
@@ -80,7 +77,15 @@ exports.login = async (req, res) => {
         //8.send token
         //9.check console
 
-        //1
+
+        //curent algo with token
+        //1.express-validator handling
+        //2.destructure the email and password
+        //3.find the email in the database
+        //4.compare the password with the hashed password
+        //5.check if the user is valid or not.
+        //6.sendtoken
+
         const errors = validationResult(req);
 
         if (!errors.isEmpty()) {
@@ -103,20 +108,8 @@ exports.login = async (req, res) => {
         }
 
         //6
-        const data = {
-            user: {
-                id: user.id,
-            }
-        }
+        sendToken(user, 200, res);
 
-        //7
-        const token = jwt.sign(data, JWT_SECRET);
-
-        //8
-        sendToken(token, user, 201, res);
-
-
-        //9
         console.log("user retreived", user.name);
 
     } catch (error) {
@@ -130,13 +123,17 @@ exports.login = async (req, res) => {
 exports.getuserdata = async (req, res) => {
     try {
 
-        //assigning req.user.id to a variable
+        //1.assigning req.user.id to a variable
+        //2.fetching the user detail but without password
+        //3.fetching the user detail but without password
+
+        //1
         let userId = req.user.id;
 
-        //fetching the user detail but without password
+        //2
         const user = await User.findById(userId).select('-password');
 
-        //sending the response
+        //3
         res.json({ user });
 
         console.log("data fetched", user.name);
@@ -146,35 +143,48 @@ exports.getuserdata = async (req, res) => {
     }
 }
 
-
-
 //-------------------------update the user-----------------------------------------------//
 
 exports.UpdateUser = async (req, res) => {
 
     try {
 
-        //destructure
+        //1.destructure
+        //2.updating the user
+        //3.find the user and update it 
+        //4.send the response
+
+        //1
         const { name, email, password } = req.body;
 
-
-        //updating the user
+        const salt = await bcrypt.genSalt(10);
+        console.log("salt->", salt)
+        const secpass = await bcrypt.hash(req.user.password, salt);
+        //2
         const newUser = {};
         if (name) { newUser.name = name };
         if (email) { newUser.email = email };
-        if (password) { newUser.password = password };
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            console.log("salt->", salt)
+            const hashedPassword = await bcrypt.hash(req.user.password, salt);
+            console.log('hashedPassword->', hashedPassword);
+            newUser.password = hashedPassword
+        };
 
-        // //find the user by ID
-        // const user = await User.findById(req.user.id);
+        let user = await User.findById(req.user.id);
 
+        if (!user) {
+            return res.status(404).send("not found");
+        }
 
-        //find the user and update it 
-        const user = await User.findByIdAndUpdate(req.user.id, { $set: newUser }, {
+        // 3
+        user = await User.findByIdAndUpdate(req.user.id, { $set: newUser }, {
             new: true,
             runValidators: true,
             useFindAndModify: false,
         });
-
+        //4
         console.log("user updated", user.name);
 
         res.json({ user });

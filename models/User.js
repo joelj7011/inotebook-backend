@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const JWT_SECRET = "shivangisagoodboy";
 const JWT_EXPIRES = "1h";
-
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = "shivangisagoodboy";
 const UserSchema = new Schema({
     name: {
         type: String,

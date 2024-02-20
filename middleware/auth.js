@@ -9,7 +9,7 @@ const authentication0 = async (req, res, next) => {
         //verifying the token 
         //assigning the token to req.user
 
-        const token = req.cookies['auth-token'];
+        const token = req.header('auth-token');
 
 
         if (!token) {
