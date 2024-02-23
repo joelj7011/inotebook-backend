@@ -16,20 +16,7 @@ const corsOptions = {
     credentials: true,
 }
 app.use(cors(corsOptions));
-// //--------------midlleware-------------------------//
-// app.use('/', (req, res, next) => {
-//     res.set('hello', 'hemang');
-//     next();
-// })
-// //--------------midlleware-------------------------//
 
-
-// //-------------endpoint----------------------------//
-// app.get('/', (req, res) => {
-//     const customHandler = res.get('hello');
-//     res.send(`hello world! custom handler:${customHandler}`);
-// })
-// //-------------endpoint----------------------------//
 connectToMongo();
 //----------------------available-routes---------------------//
 app.use('/api/auth', require('./routes/userRoute'));

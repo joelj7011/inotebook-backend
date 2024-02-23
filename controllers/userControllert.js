@@ -1,10 +1,11 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const VerificationToken = require("../models/Verification");
 const catchAsyncErrors = require('../Utils/catchAsyncErrors');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { generateOtp, mailTransport } = require('../Utils/otpGenerator');
 const { sendToken } = require('../Utils/sendtoken');
-const JWT_SECRET = "shivangisagoodboy";
+
 
 
 //------------------------------creating user-------------------------------//
@@ -49,6 +50,23 @@ exports.createUser = async (req, res) => {
             password: secPass,
             email: req.body.email,
         });
+
+        const OTP = await generateOtp();
+        console.log("OTP->", OTP);
+
+        const verificationToken = await VerificationToken.create({
+
+            owner: user.id,
+            verifyToken: OTP,
+        });
+        console.log("verificationToken->", verificationToken);
+
+        mailTransport().sendMail({
+            from: "shivangtiwari7011@gmail.com",
+            to: user.email,
+            subject: "verify your email account",
+            html: `<h1>${OTP}</h1>`,
+        })
 
         sendToken(user, 200, res)
 
