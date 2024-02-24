@@ -1,7 +1,9 @@
+require('dotenv').config();
 const connectToMongo = require('./config/db');
 const express = require('express');
 var cookieParser = require('cookie-parser')
 const cors = require('cors');
+
 
 const app = express();
 const port = 5000;

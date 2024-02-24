@@ -5,12 +5,14 @@ const catchAsyncErrors = require('../Utils/catchAsyncErrors');
 const bcrypt = require('bcryptjs');
 const { generateOtp, mailTransport } = require('../Utils/otpGenerator');
 const { sendToken } = require('../Utils/sendtoken');
+const catchErrors = require('../Utils/catchErrors');
 
 
 
 //------------------------------creating user-------------------------------//
 exports.createUser = async (req, res) => {
     try {
+        const timeout = process.env.JWT_EXPIRES;
 
         //previous-algo
         //1.express-validator handling
@@ -27,7 +29,11 @@ exports.createUser = async (req, res) => {
         //2.generating salt for password
         //3.adding salt to the password 
         //4.creat the user
-        //5.sendtoken
+        //5.generating the otp
+        //6.creating the verification token
+        //7.sending email for verification to the user
+        //8.checking if the user is verified 
+        //9.ending the token
 
         //1
         const errors = validationResult(req);
@@ -39,6 +45,7 @@ exports.createUser = async (req, res) => {
 
         //2
         const salt = await bcrypt.genSalt(10);
+        console.log('salt->', salt);
 
         //3
         const secPass = await bcrypt.hash(req.body.password, salt);
@@ -49,26 +56,54 @@ exports.createUser = async (req, res) => {
             name: req.body.name,
             password: secPass,
             email: req.body.email,
+            isVerified: false
         });
 
+        //5
         const OTP = await generateOtp();
         console.log("OTP->", OTP);
 
+        //6
         const verificationToken = await VerificationToken.create({
-
             owner: user.id,
             verifyToken: OTP,
         });
         console.log("verificationToken->", verificationToken);
 
-        mailTransport().sendMail({
-            from: "shivangtiwari7011@gmail.com",
-            to: user.email,
-            subject: "verify your email account",
-            html: `<h1>${OTP}</h1>`,
-        })
+        //7
+        mailTransport().then((transporter) => {
+            transporter.sendMail({
+                from: "shivangtiwari7011@gmail.com",
+                to: user.email,
+                subject: "verify your email account",
+                html: `<h1>${OTP}</h1>`,
+            }).then((info) => {
+                console.log("info->")
+                console.log("Email sent:", info.response);
+            }).catch((error) => {
+                console.error("Error sending email:", error);
+            })
+        });
 
-        sendToken(user, 200, res)
+
+
+        //8
+        setTimeout(() => {
+            if (!user.isVerified) {
+                user.isVerified = false;
+                res.json({ user: "not verifird" })
+            }
+            else if (user.isVerified) {
+                user.isVerified = true;
+                res.json({ user: "verifird" });
+            }
+        }, timeout);
+
+        //9
+        if (user.isVerified) {
+            sendToken(user, 200, res)
+        }
+
 
         console.log('user-saved', user.name);
     }
@@ -126,7 +161,13 @@ exports.login = async (req, res) => {
         }
 
         //6
-        sendToken(user, 200, res);
+        if (user.isVerified === true) {
+            sendToken(user, 200, res);
+        } else {
+            sendToken(null, 200, res);
+            res.json({ user: "this user is not verified" });
+        }
+
 
         console.log("user retreived", user.name);
 
