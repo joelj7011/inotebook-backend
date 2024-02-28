@@ -11,8 +11,10 @@ const catchErrors = require('../Utils/catchErrors');
 
 //------------------------------creating user-------------------------------//
 exports.createUser = async (req, res) => {
+    let user;
     try {
         const timeout = process.env.JWT_EXPIRES;
+
 
         //previous-algo
         //1.express-validator handling
@@ -52,7 +54,7 @@ exports.createUser = async (req, res) => {
         console.log("secPass", secPass)
 
         //4
-        const user = await User.create({
+        user = await User.create({
             name: req.body.name,
             password: secPass,
             email: req.body.email,
@@ -71,36 +73,43 @@ exports.createUser = async (req, res) => {
         console.log("verificationToken->", verificationToken);
 
         //7
-        mailTransport().then((transporter) => {
-            transporter.sendMail({
-                from: "shivangtiwari7011@gmail.com",
-                to: user.email,
-                subject: "verify your email account",
-                html: `<h1>${OTP}</h1>`,
-            }).then((info) => {
-                console.log("info->")
+        mailTransport().then(async(transporter) => {
+            try {
+                const info = await transporter.sendMail({
+                    from: "shivangtiwari7011@gmail.com",
+                    to: user.email,
+                    subject: "verify your email account",
+                    html: `<h1>${OTP}</h1>`,
+                });
+                console.log("info->",info)
                 console.log("Email sent:", info.response);
-            }).catch((error) => {
+
+            } catch (error) {
                 console.error("Error sending email:", error);
-            })
+            }
         });
 
 
 
         //8
         setTimeout(() => {
-            if (!user.isVerified) {
-                user.isVerified = false;
+            if (user.isVerified === false) {
                 res.json({ user: "not verifird" })
             }
-            else if (user.isVerified) {
-                user.isVerified = true;
+            else if (user.isVerified === true) {
                 res.json({ user: "verifird" });
             }
         }, timeout);
 
+
+        setTimeout(async () => {
+            user = await User.findByIdAndDelete(req.user.id);
+        }, timeout)
+
+        console.log("user-deleted", user.email);
+
         //9
-        if (user.isVerified) {
+        if (user.isVerified === true) {
             sendToken(user, 200, res)
         }
 
@@ -271,11 +280,6 @@ exports.Deletetheuser = async (req, res) => {
         //find the user and delete it 
         // let user = await User.findById(req.user.id);
         // if (!user) { return res.status(404).send("not found"); }
-
-        //Allow deletion only if user owns this User
-        // if (user.toString() !== req.user.id) {
-        //     return res.status(404).send("not found");
-        // }
 
         //delete the user
         const user = await User.findByIdAndDelete(req.user.id, {
