@@ -11,7 +11,7 @@ const catchErrors = require('../Utils/catchErrors');
 
 //------------------------------creating user-------------------------------//
 exports.createUser = async (req, res) => {
-    let user;
+
     try {
         const timeout = process.env.JWT_EXPIRES;
 
@@ -34,8 +34,6 @@ exports.createUser = async (req, res) => {
         //5.generating the otp
         //6.creating the verification token
         //7.sending email for verification to the user
-        //8.checking if the user is verified 
-        //9.ending the token
 
         //1
         const errors = validationResult(req);
@@ -54,11 +52,10 @@ exports.createUser = async (req, res) => {
         console.log("secPass", secPass)
 
         //4
-        user = await User.create({
+        let user = await User.create({
             name: req.body.name,
             password: secPass,
             email: req.body.email,
-            isVerified: false
         });
 
         //5
@@ -73,43 +70,31 @@ exports.createUser = async (req, res) => {
         console.log("verificationToken->", verificationToken);
 
         //7
-        mailTransport().then(async(transporter) => {
-            try {
-                const info = await transporter.sendMail({
-                    from: "shivangtiwari7011@gmail.com",
-                    to: user.email,
-                    subject: "verify your email account",
-                    html: `<h1>${OTP}</h1>`,
-                });
-                console.log("info->",info)
+        mailTransport().then((transporter) => {
+            transporter.sendMail({
+                from: "shivangtiwari7011@gmail.com",
+                to: user.email,
+                subject: "Verify your email account",
+                html: `<h1>${OTP}</h1>`,
+            }).then((info) => {
                 console.log("Email sent:", info.response);
+            }).then(() => {
 
-            } catch (error) {
+                if (!user.verified) {
+                    res.json({ message: `Email sent to ${user.email}. Please verify your account` });
+                }
+            }).then(() => {
+                setTimeout(async () => {
+                    await User.findByIdAndDelete(user.id);
+                    console.log("User deleted:", user.email);
+                }, timeout);
+            }).catch((error) => {
                 console.error("Error sending email:", error);
-            }
+            });
         });
 
-
-
         //8
-        setTimeout(() => {
-            if (user.isVerified === false) {
-                res.json({ user: "not verifird" })
-            }
-            else if (user.isVerified === true) {
-                res.json({ user: "verifird" });
-            }
-        }, timeout);
-
-
-        setTimeout(async () => {
-            user = await User.findByIdAndDelete(req.user.id);
-        }, timeout)
-
-        console.log("user-deleted", user.email);
-
-        //9
-        if (user.isVerified === true) {
+        if (user.verified === true) {
             sendToken(user, 200, res)
         }
 
@@ -121,6 +106,22 @@ exports.createUser = async (req, res) => {
     }
 }
 
+exports.verifyUser = async (req, res) => {
+    const { user, OTP } = req.body;
+
+    if (!user || !OTP.trim()) {
+        return catchErrors(401, 'missing parameters', res);
+    }
+    const userId = await User.findById({ id: user.id });
+    if (!userId) {
+        res.json({ message: "no user found" });
+    }
+
+
+
+
+
+}
 
 
 
@@ -170,12 +171,8 @@ exports.login = async (req, res) => {
         }
 
         //6
-        if (user.isVerified === true) {
-            sendToken(user, 200, res);
-        } else {
-            sendToken(null, 200, res);
-            res.json({ user: "this user is not verified" });
-        }
+
+        sendToken(user, 200, res);
 
 
         console.log("user retreived", user.name);
@@ -308,3 +305,4 @@ exports.logout = (req, res) => {
 
     }
 }
+

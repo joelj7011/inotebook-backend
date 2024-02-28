@@ -20,6 +20,11 @@ const UserSchema = new Schema({
     data: {
         type: Date,
         default: Date.now
+    },
+    verified:{
+        type:Boolean,
+        default:false,
+        required:true
     }
 })
 

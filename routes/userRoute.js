@@ -1,8 +1,8 @@
 const router = require('express').Router();
-const { createUser, login, getuserdata, UpdateUser, Deletetheuser } = require('../controllers/userControllert');
+const { createUser, login, getuserdata, UpdateUser, Deletetheuser, verifyUser } = require('../controllers/userControllert');
 const { body } = require('express-validator');
-const authentication0 = require('../middleware/auth');
 const authentication = require('../middleware/auth1');
+
 
 
 
@@ -46,6 +46,7 @@ router.post('/login', [
     }).exists().withMessage('Null value not acceptable or password is too short'),
 ], login);
 
+router.post('/verifyuser/:id',verifyUser);
 router.post('/getuser', authentication, getuserdata);
 
 router.put('/updateuser/:id', authentication, UpdateUser);
