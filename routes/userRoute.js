@@ -46,12 +46,20 @@ router.post('/login', [
     }).exists().withMessage('Null value not acceptable or password is too short'),
 ], login);
 
-router.post('/verifyuser/:id',verifyUser);
+router.post('/verifyuser/:id', [
+    body('owner').custom((value) => {
+        if (value.length <= 3 || value.isempty) {
+            throw new Error("email is too small");
+        }
+        return true;
+    }).withMessage('Null value not accepted or password is too short'),
+], verifyUser);
+
 router.post('/getuser', authentication, getuserdata);
 
-router.put('/updateuser', authentication, UpdateUser);
+router.put('/updateuser/:id', authentication, UpdateUser);
 
-router.delete('/deleteuser', authentication, Deletetheuser);
+router.delete('/deleteuser/:id', authentication, Deletetheuser);
 
 
 

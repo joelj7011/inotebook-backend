@@ -79,7 +79,6 @@ exports.createUser = async (req, res) => {
             }).then((info) => {
                 console.log("Email sent:", info.response);
             }).then(() => {
-
                 if (!user.verified) {
                     res.json({ message: `Email sent to ${user.email}. Please verify your account` });
                 }
@@ -98,7 +97,6 @@ exports.createUser = async (req, res) => {
             sendToken(user, 200, res)
         }
 
-        // sendToken(user, 200, res)
         console.log('user-saved', user.name);
     }
     catch (error) {
@@ -116,9 +114,6 @@ exports.verifyUser = async (req, res) => {
     if (!userId) {
         res.json({ message: "no user found" });
     }
-
-
-
 
 
 }
