@@ -49,9 +49,9 @@ router.post('/login', [
 router.post('/verifyuser/:id',verifyUser);
 router.post('/getuser', authentication, getuserdata);
 
-router.put('/updateuser/:id', authentication, UpdateUser);
+router.put('/updateuser', authentication, UpdateUser);
 
-router.delete('/deleteuser/:id', authentication, Deletetheuser);
+router.delete('/deleteuser', authentication, Deletetheuser);
 
 
 

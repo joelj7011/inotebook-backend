@@ -3,10 +3,11 @@ const router = express.Router();
 const fetchUser = require('../middleware/auth');
 const { fetchAllNotes, AddNotes, updateTheNotes, DeleteTheNode } = require('../controllers/notesController');
 const { body } = require('express-validator');
+const authentication = require('../middleware/auth1');
 
 
 //login required
-router.get('/getnotes', fetchUser, fetchAllNotes);
+router.get('/getnotes', authentication, fetchAllNotes);
 
 
 //login required
@@ -27,7 +28,7 @@ router.post('/addnotes', [
 
     }).withMessage("description is too small"),
 
-], fetchUser, AddNotes)
+], authentication, AddNotes)
 
 //login required
 router.put('/updateNote/:id', [
@@ -46,10 +47,10 @@ router.put('/updateNote/:id', [
         return true;
 
     }).withMessage("description is too small"),
-], fetchUser, updateTheNotes);
+], authentication, updateTheNotes);
 
 //login required
-router.delete('/deleteNote/:id', fetchUser, DeleteTheNode);
+router.delete('/deleteNote/:id', authentication, DeleteTheNode);
 
 
 module.exports = router;

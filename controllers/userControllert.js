@@ -98,7 +98,7 @@ exports.createUser = async (req, res) => {
             sendToken(user, 200, res)
         }
 
-
+        // sendToken(user, 200, res)
         console.log('user-saved', user.name);
     }
     catch (error) {
