@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const { generateOtp, mailTransport } = require('../Utils/otpGenerator');
 const { sendToken } = require('../Utils/sendtoken');
 const catchErrors = require('../Utils/catchErrors');
-
+const jwt = require('jsonwebtoken');
 
 
 //------------------------------creating user-------------------------------//
@@ -67,8 +67,10 @@ exports.createUser = async (req, res) => {
             owner: user.id,
             verifyToken: OTP,
         });
-        console.log("verificationToken->", verificationToken);
 
+        console.log("verificationToken->", verificationToken.id);
+        console.log("User->", { owner: user._id });
+        console.log("otp->", OTP);
         //7
         mailTransport().then((transporter) => {
             transporter.sendMail({
@@ -80,24 +82,13 @@ exports.createUser = async (req, res) => {
                 console.log("Email sent:", info.response);
             }).then(() => {
                 if (!user.verified) {
-                    res.json({ message: `Email sent to ${user.email}. Please verify your account` });
+                    return res.json({ message: `Email sent to ${user.email}. Please verify your account` });
+                } else if (user.verified) {
+                    return sendToken(user, 200, res)
                 }
-            }).then(() => {
-                setTimeout(async () => {
-                    await User.findByIdAndDelete(user.id);
-                    console.log("User deleted:", user.email);
-                }, timeout);
-            }).catch((error) => {
-                console.error("Error sending email:", error);
-            });
+            })
         });
-
-        //8
-        if (user.verified === true) {
-            sendToken(user, 200, res)
-        }
-
-        console.log('user-saved', user.name);
+        console.log({ id: user.id });
     }
     catch (error) {
         catchAsyncErrors(error, req, res);
@@ -105,20 +96,61 @@ exports.createUser = async (req, res) => {
 }
 
 exports.verifyUser = async (req, res) => {
-    const { user, OTP } = req.body;
+    try {
+        const { user, OTP } = req.body;
 
-    if (!user || !OTP.trim()) {
-        return catchErrors(401, 'missing parameters', res);
+        const userId = await User.findById(user.id);
+        if (!userId) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        console.log(`test1->passed userId->${userId}`);
+
+        const verifyemail = await VerificationToken.findOne({ owner: user.id });
+        if (!verifyemail) {
+            return res.status(404).json({ message: "Verification token not found" });
+        }
+
+        console.log(`test2->passed VerificationToken->${verifyemail}`);
+
+        const token = await verifyemail.compare(OTP);
+        if (!OTP) {
+            return res.status(404).json({ message: "invalid otp" });
+        }
+
+        console.log(`test3->passed token->${token}`);
+
+        userId.verified = true;
+
+        await userId.save();
+
+        console.log("test4->passed");
+
+        await VerificationToken.findByIdAndDelete(verifyemail.id);
+        console.log(`test5->passed VerificationToken->${VerificationToken}`);
+
+        mailTransport().then((transporter) => {
+            transporter.sendMail({
+                from: "shivangtiwari7011@gmail.com",
+                to: userId.email,
+                subject: "Email account verified",
+                html: `Congratulations! Your email account has been verified.`,
+            }).then((info) => {
+                console.log("Email sent:", info.response);
+            }).catch((error) => {
+                console.error("Error sending email:", error);
+            });
+        });
+        console.log("test5->passed");
+
+        res.status(200).json({ message: "Email account verified successfully" });
+
+        const deleteSavedVerification = VerificationToken.findByIdAndDelete(verifyemail.id);
+        console.log("all test passed");
+
+    } catch (error) {
+        catchAsyncErrors(error, req, res);
     }
-    const userId = await User.findById({ id: user.id });
-    if (!userId) {
-        res.json({ message: "no user found" });
-    }
-
-
 }
-
-
 
 //-----------------------------logging the user-------------------------------//
 exports.login = async (req, res) => {
@@ -166,11 +198,14 @@ exports.login = async (req, res) => {
         }
 
         //6
+        if (user.verified === false) {
+            return res.json("please verify first");
+        }
 
-        sendToken(user, 200, res);
+        if (user.verified === true) {
+            return sendToken(user, 200, res);
+        }
 
-
-        console.log("user retreived", user.name);
 
     } catch (error) {
         catchAsyncErrors(error, req, res);
@@ -192,6 +227,10 @@ exports.getuserdata = async (req, res) => {
 
         //2
         const user = await User.findById(userId).select('-password');
+
+        if (!user.verified) {
+            return catchErrors(500, "verify first", res);
+        }
 
         //3
         res.json({ user });

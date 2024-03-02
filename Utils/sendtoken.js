@@ -1,4 +1,4 @@
-const JWT_EXPIRES = "1h";
+
 exports.sendToken = (user, statusCode, res) => {
     //1.getjwtToken from the user model
     //2.check the token
@@ -12,7 +12,7 @@ exports.sendToken = (user, statusCode, res) => {
     console.log("token", token)
     //3
     const options = {
-        expiresIn: JWT_EXPIRES,
+        expiresIn: process.env.JWT_EXPIRES,
         httpOnly: true
     };
     //4

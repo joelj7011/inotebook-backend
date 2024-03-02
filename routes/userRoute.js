@@ -22,6 +22,9 @@ router.post('/createuser', [
     body('password').isLength({ min: 5 }).withMessage("Password is too short"),
 ], createUser);
 
+//NO_LOGIN
+router.post('/verifyuser', verifyUser);
+
 //NO-LOGIN
 router.post('/login', [
     body('email').custom((value) => {
@@ -46,14 +49,7 @@ router.post('/login', [
     }).exists().withMessage('Null value not acceptable or password is too short'),
 ], login);
 
-router.post('/verifyuser/:id', [
-    body('owner').custom((value) => {
-        if (value.length <= 3 || value.isempty) {
-            throw new Error("email is too small");
-        }
-        return true;
-    }).withMessage('Null value not accepted or password is too short'),
-], verifyUser);
+
 
 router.post('/getuser', authentication, getuserdata);
 

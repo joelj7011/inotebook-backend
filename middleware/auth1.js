@@ -1,4 +1,4 @@
-const JWT_SECRET = "shivangisagoodboy";
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const catchAsyncErrors = require('../Utils/catchAsyncErrors');
@@ -23,7 +23,7 @@ const authentication = async (req, res, next) => {
             return catchErrors(401, 'please login', res);
         }
         //4
-        const decodedData = jwt.verify(token, JWT_SECRET);
+        const decodedData = jwt.verify(token, process.env.JWT_SECRET);
         //5
         console.log("decodedata->", decodedData);
         //6

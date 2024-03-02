@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const JWT_EXPIRES = "1h";
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = "shivangisagoodboy";
+
 const bcrypt = require("bcryptjs");
 
 
 const VerificationToken = new Schema({
     owner: {
-        type:  mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
