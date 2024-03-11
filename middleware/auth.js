@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = "shivangisagoodboy";
 const User = require('../models/User');
+const catchAsyncErrors = require('../Utils/catchAsyncErrors');
 
 const authentication0 = async (req, res, next) => {
     try {
@@ -11,28 +11,34 @@ const authentication0 = async (req, res, next) => {
 
         const token = req.header('auth-token');
 
+        console.log("token->", token)
 
         if (!token) {
             return res.status(401).send({ error: "please authenticate using a valid token" });
         }
 
+        const decodedata = jwt.verify(token, process.env.JWT_SECRET);
 
-        const data = jwt.verify(token, JWT_SECRET);
+        console.log("decodedata", decodedata);
 
+        if (!decodedata) {
+            return res.status(401).send({ error: "Invalid token format" });
+        }
 
-        console.log('User information extracted from token:', data.user);
+        console.log("data->", decodedata)
 
+        console.log('User information extracted from token:', decodedata);
 
-        // const data = await User.findById(decodedata.id);
-
-        req.user = data.user;
+        req.user = decodedata;
 
 
         console.log('req.user after assignment:', req.user);
 
 
     } catch (error) {
+          
         return res.status(401).send({ error: "please authenticate using a valid token" });
+     
     }
 
     next();

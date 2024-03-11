@@ -52,6 +52,7 @@ exports.createUser = async (req, res) => {
         console.log("secPass", secPass)
 
         //4
+
         let user = await User.create({
             name: req.body.name,
             password: secPass,
@@ -69,7 +70,7 @@ exports.createUser = async (req, res) => {
         });
 
         console.log("verificationToken->", verificationToken.id);
-        console.log("User->", { owner: user._id });
+        console.log("User->",  user._id );
         console.log("otp->", OTP);
         //7
         mailTransport().then((transporter) => {
@@ -82,13 +83,21 @@ exports.createUser = async (req, res) => {
                 console.log("Email sent:", info.response);
             }).then(() => {
                 if (!user.verified) {
-                    return res.json({ message: `Email sent to ${user.email}. Please verify your account` });
-                } else if (user.verified) {
-                    return sendToken(user, 200, res)
+                    return res.json({ message: `Email sent to ${user}. Please verify your account` });
                 }
             })
         });
-        console.log({ id: user.id });
+
+        setTimeout(async () => {
+            if (!user.verified) {
+                await User.findByIdAndDelete(user.id, {
+                    new: true,
+                    runValidators: true,
+                    useFindAndModify: false,
+                });
+            }
+        }, timeout);
+
     }
     catch (error) {
         catchAsyncErrors(error, req, res);
@@ -97,13 +106,13 @@ exports.createUser = async (req, res) => {
 
 exports.verifyUser = async (req, res) => {
     try {
-        const { user, OTP } = req.body;
+        const { OTP } = req.body;
 
-        const userId = await User.findById(user.id);
-        if (!userId) {
+        const user = await User.findById(req.params.id);
+        if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        console.log(`test1->passed userId->${userId}`);
+        console.log(`test1->passed userId->${user}`);
 
         const verifyemail = await VerificationToken.findOne({ owner: user.id });
         if (!verifyemail) {
@@ -119,9 +128,9 @@ exports.verifyUser = async (req, res) => {
 
         console.log(`test3->passed token->${token}`);
 
-        userId.verified = true;
+        user.verified = true;
 
-        await userId.save();
+        await user.save();
 
         console.log("test4->passed");
 
@@ -131,7 +140,7 @@ exports.verifyUser = async (req, res) => {
         mailTransport().then((transporter) => {
             transporter.sendMail({
                 from: "shivangtiwari7011@gmail.com",
-                to: userId.email,
+                to: user.email,
                 subject: "Email account verified",
                 html: `Congratulations! Your email account has been verified.`,
             }).then((info) => {
@@ -288,14 +297,6 @@ exports.UpdateUser = async (req, res) => {
 
         res.json({ user });
 
-        // //The way iam  checking user.toString() !== req.params.id it`s incorrect because it is comparing the user document (after finding by ID) to the string representation of the request parameter (req.params.id). This condition would always evaluate to true, leading to the "not found" response.--//////
-        // if (!user) {
-        //     return res.status(404).send("not found");
-        // }
-        // if (user.toString() !== req.params.id) {
-        //     return res.status(404).send("not found");
-        // }
-
     } catch (error) {
         catchAsyncErrors(error, req, res);
     }
@@ -332,11 +333,22 @@ exports.Deletetheuser = async (req, res) => {
 
 }
 
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
     try {
 
+        console.log("test-1");
+        await res.cookie("token", null, {
+            expiers: new Date(Date.now()),
+            httpOnly: true,
+        })
+        console.log("test-2");
+        res.status(200).json({
+            success: true,
+            message: "logged out",
+        })
+        console.log("all test passed");
     } catch (error) {
-
+        catchAsyncErrors(error, req, res);
     }
 }
 

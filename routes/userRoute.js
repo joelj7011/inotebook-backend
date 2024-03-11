@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { createUser, login, getuserdata, UpdateUser, Deletetheuser, verifyUser } = require('../controllers/userControllert');
+const { createUser, login, getuserdata, UpdateUser, Deletetheuser, verifyUser, logout } = require('../controllers/userControllert');
 const { body } = require('express-validator');
 const authentication = require('../middleware/auth1');
 
@@ -23,7 +23,7 @@ router.post('/createuser', [
 ], createUser);
 
 //NO_LOGIN
-router.post('/verifyuser', verifyUser);
+router.post('/verifyuser/:id', verifyUser);
 
 //NO-LOGIN
 router.post('/login', [
@@ -53,10 +53,10 @@ router.post('/login', [
 
 router.post('/getuser', authentication, getuserdata);
 
-router.put('/updateuser/:id', authentication, UpdateUser);
+router.put('/updateuser', authentication, UpdateUser);
 
-router.delete('/deleteuser/:id', authentication, Deletetheuser);
+router.delete('/deleteuser', authentication, Deletetheuser);
 
-
+router.post('/logout', logout);
 
 module.exports = router;

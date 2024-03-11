@@ -8,13 +8,14 @@ const { validationResult } = require('express-validator');
 exports.fetchAllNotes = async (req, res) => {
 
     try {
-        //looking in to the database if notes exists or not 
         const notes = await Notes.find({ user: req.user.id });
-
+        if (!notes) {
+            res.status(404).send("no notes");
+        }
         //returning nodes
         res.send({ notes: notes.length === 0 ? "no notes" : notes });
 
-        
+
     } catch (error) {
         catchAsyncErrors(error, req, res);
     }
@@ -37,7 +38,6 @@ exports.AddNotes = async (req, res) => {
         const existingentery = await Notes.findOne({ title, description, user: req.user.id });
 
         if (existingentery) {
-            console.log('book with the same name and description already exists,Try defferent name and description')
             return res.status(400).json({
                 success: false,
                 message: 'book with the same name and description already exists,Try defferent name and description',
@@ -50,6 +50,10 @@ exports.AddNotes = async (req, res) => {
             tag: req.body.tag,
             user: req.user.id,
         })
+        console.log("notes->",notes._id);
+
+        console.log("user->", req.user);
+
         console.log("notes->", notes);
 
         res.json(notes);
@@ -64,7 +68,7 @@ exports.updateTheNotes = async (req, res) => {
     try {
         const user = req.user.id;
         console.log("user->", user);
-    
+
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
