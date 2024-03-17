@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const JWT_EXPIRES = "1h";
-const jwt = require('jsonwebtoken');
+
 
 const bcrypt = require("bcryptjs");
 
@@ -18,7 +17,7 @@ const VerificationToken = new Schema({
     },
     creatrAd: {
         type: Date,
-        expiersIn: JWT_EXPIRES,
+        expiersIn: process.env.JWT_EXPIRES,
         default: Date.now(),
     }
 });

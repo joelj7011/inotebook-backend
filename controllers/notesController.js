@@ -12,7 +12,7 @@ exports.fetchAllNotes = async (req, res) => {
         if (!notes) {
             res.status(404).send("no notes");
         }
-        //returning nodes
+    
         res.send({ notes: notes.length === 0 ? "no notes" : notes });
 
 

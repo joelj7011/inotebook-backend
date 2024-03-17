@@ -2,7 +2,7 @@
 const catchErrors = (status, message, res) => {
     res.status(status).json({
         success: false,
-        message
+        message: error.message,
     })
 }
 

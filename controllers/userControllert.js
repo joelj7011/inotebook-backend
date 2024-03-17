@@ -7,6 +7,7 @@ const { generateOtp, mailTransport } = require('../Utils/otpGenerator');
 const { sendToken } = require('../Utils/sendtoken');
 const catchErrors = require('../Utils/catchErrors');
 const jwt = require('jsonwebtoken');
+const { Promise } = require('mongoose');
 
 
 //------------------------------creating user-------------------------------//
@@ -70,9 +71,10 @@ exports.createUser = async (req, res) => {
         });
 
         console.log("verificationToken->", verificationToken.id);
-        console.log("User->",  user._id );
+        console.log("User->", user._id);
         console.log("otp->", OTP);
         //7
+
         mailTransport().then((transporter) => {
             transporter.sendMail({
                 from: "shivangtiwari7011@gmail.com",
@@ -81,13 +83,13 @@ exports.createUser = async (req, res) => {
                 html: `<h1>${OTP}</h1>`,
             }).then((info) => {
                 console.log("Email sent:", info.response);
-            }).then(() => {
-                if (!user.verified) {
-                    return res.json({ message: `Email sent to ${user}. Please verify your account` });
-                }
+            }).catch((error) => {
+                return res.status(401).json({ message: `something wrong with the mai transpoer${error.message}` });
             })
         });
-
+        if (!user.verified) {
+            return res.json({ message: `Email sent to ${user}. Please verify your account` });
+        }
         setTimeout(async () => {
             if (!user.verified) {
                 await User.findByIdAndDelete(user.id, {
@@ -139,7 +141,7 @@ exports.verifyUser = async (req, res) => {
 
         mailTransport().then((transporter) => {
             transporter.sendMail({
-                from: "shivangtiwari7011@gmail.com",
+                from: "itachiuchiha7019@gmail.com",
                 to: user.email,
                 subject: "Email account verified",
                 html: `Congratulations! Your email account has been verified.`,
@@ -149,6 +151,7 @@ exports.verifyUser = async (req, res) => {
                 console.error("Error sending email:", error);
             });
         });
+
         console.log("test5->passed");
 
         res.status(200).json({ message: "Email account verified successfully" });
@@ -331,6 +334,49 @@ exports.Deletetheuser = async (req, res) => {
         catchAsyncErrors(error, req, res);
     }
 
+}
+
+exports.changepassword = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors });
+        }
+        console.log("test");
+        const { oldpassword, newPassword } = req.body;
+        console.log("test-1");
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return catchErrors(401, "problem occured", res);
+        }
+        console.log("test-2", user);
+
+        if (oldpassword === newPassword) {
+            return res.status(401).send({ message: "choose a new password" });
+        }
+
+        const auhtentication = await bcrypt.compare(oldpassword, user.password);
+        if (!auhtentication) {
+            return res.status(401).send({ message: `you enterd an old password ` });
+        }
+        console.log("test-3", auhtentication);
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        console.log("test-4", salt, hashedPassword);
+
+        const changepassword = await User.updateOne({ id: user.id }, { password: user.password = hashedPassword });
+        console.log("test5->", changepassword)
+        await user.save();
+        return res.json({ message: `Password updated for ${user.name}` });
+        
+
+      
+
+    } catch (error) {
+        catchAsyncErrors(error, req, res);
+    }
 }
 
 exports.logout = async (req, res) => {
