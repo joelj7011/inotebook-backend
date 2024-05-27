@@ -1,12 +1,11 @@
 const router = require('express').Router();
-const { createUser, login, getuserdata, UpdateUser, Deletetheuser, verifyUser, logout, changepassword } = require('../controllers/userControllert');
+const { createUser, login, getuserdata, UpdateUser, Deletetheuser, verifyUser, logout, changepassword, sendVerificationAgain, loginWithOtp, GenerateOtp, refreshAcessToken } = require('../controllers/userControllert');
 const { body } = require('express-validator');
 const authentication = require('../middleware/auth1');
 
 
 
-
-//NO-LOGIN
+//-----------------no login--------------------//
 router.post('/createuser', [
     body('name').custom((value) => {
 
@@ -22,10 +21,8 @@ router.post('/createuser', [
     body('password').isLength({ min: 5 }).withMessage("Password is too short"),
 ], createUser);
 
-//NO_LOGIN
 router.post('/verifyuser/:id', verifyUser);
 
-//NO-LOGIN
 router.post('/login', [
     body('email').custom((value) => {
 
@@ -49,7 +46,29 @@ router.post('/login', [
     }).exists().withMessage('Null value not acceptable or password is too short'),
 ], login);
 
-router.post('/changePassword',authentication,changepassword);
+router.post('/generateotp', GenerateOtp);
+
+router.post('/sendOtpAgain/:id', sendVerificationAgain);
+
+router.post('/loginwithotp', [
+    body('email').custom((value) => {
+
+        if (!value) {
+            throw new Error("email is required");
+
+        } else if (value.length <= 3 || value.isempty) {
+            throw new Error("email is too small");
+        }
+        return true;
+    }).isEmail().withMessage("Null value not acceptable or email is too short"),
+], loginWithOtp);
+
+router.get('/refreshacessaoken', refreshAcessToken);
+
+
+//--------------------login-required-----------------------//
+
+router.post('/changePassword', authentication, changepassword);
 
 router.post('/getuser', authentication, getuserdata);
 
@@ -57,6 +76,8 @@ router.put('/updateuser', authentication, UpdateUser);
 
 router.delete('/deleteuser', authentication, Deletetheuser);
 
-router.post('/logout', logout);
+router.post('/logout', authentication, logout);
+
+
 
 module.exports = router;

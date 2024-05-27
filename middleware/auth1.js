@@ -1,46 +1,50 @@
-
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const catchAsyncErrors = require('../Utils/catchAsyncErrors');
-const catchErrors = require('../Utils/catchErrors');
 
 const authentication = async (req, res, next) => {
     try {
-        //1.req cookies from the browser
-        //2.check token
-        //3.if no token return error
-        //4.add JWT_SECRET to decodedata
-        //5.check decodedata
-        //6.find the user id
-        //7.assign req.user id
 
-        //1
-        const { token } = req.cookies;
-        //2
-        console.log("token->", token);
-        //3
+        console.log('|')
+        console.log("AUTHENTICATION STARTS");
+
+        const authHeader = req.headers.authorization || req.headers.Authorization;
+        const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+        const { accessToken } = req.cookies;
+        console.log(accessToken,"->",tokenFromHeader);
+        if (!accessToken) {
+            return res.status(401).json({ message: "no token " });
+        }
+
+        const token = tokenFromHeader ?? accessToken;
         if (!token) {
-            return catchErrors(401, 'please login', res);
+            console.log("Token not found in both authorization header and cookies");
+            return res.sendStatus(401);
         }
-        //4
-        const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-        //5
-        console.log("decodedata->", decodedData);
-        //6
-        const data = await User.findById(decodedData.id);
 
-        if (!data) {
-            throw new Error('no data available');
+        let decodedData;
+        try {
+            decodedData = jwt.verify(token, process.env.JWT_SECRET);
+            console.log("Token verified");
+        } catch (err) {
+            return res.sendStatus(403);
         }
-        //7
+
+        const data = await User.findById(decodedData.id).select("-password");
+        if (!data) {
+            console.log("User not found");
+            return res.status(401).json({ message: "User not found" });
+        }
+
         req.user = data;
 
-        next();
+        console.log("Authentication completed");
 
+        next();
     } catch (error) {
         catchAsyncErrors(error, req, res);
     }
-
 }
 
 module.exports = authentication;

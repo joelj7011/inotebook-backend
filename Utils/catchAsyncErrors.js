@@ -1,4 +1,3 @@
-//mongoose duplicate error
 
 const catchAsyncErrors = (error, req, res) => {
 

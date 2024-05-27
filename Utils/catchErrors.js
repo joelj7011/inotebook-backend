@@ -1,8 +1,8 @@
 
 const catchErrors = (status, message, res) => {
-    res.status(status).json({
+    res.sendStatus(status).json({
         success: false,
-        message: error.message,
+        message: message,
     })
 }
 

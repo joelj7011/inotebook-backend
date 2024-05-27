@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-
-
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
 
 
 const VerificationToken = new Schema({
@@ -22,14 +21,13 @@ const VerificationToken = new Schema({
     }
 });
 
-VerificationToken.pre("save", async function (next) {
-    if (this.isModified("verifyToken")) {
-        const firstSalt = await bcrypt.genSalt(10)
-        const hash = await bcrypt.hash(this.verifyToken, firstSalt);
-        this.verifyToken = hash;
-    }
-    next();
-});
+VerificationToken.methods.signOtp = async function (verifyToken) {
+    const firstSalt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(verifyToken, firstSalt);
+    verifyToken = hash;
+    this.verifyToken = verifyToken;
+    return this.save();
+}
 
 VerificationToken.methods.compare = async function (verifyToken) {
     const result = await bcrypt.compare(verifyToken, this.verifyToken);
